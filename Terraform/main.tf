@@ -45,6 +45,19 @@ resource "azurerm_network_security_group" "main" {
 
   tags = var.tags
 }
+ 
+ resource "azurerm_network_interface_security_group_association" "main" {
+  count = length(azurerm_network_interface.main)
+  network_interface_id      = azurerm_network_interface.main[count.index].id
+  network_security_group_id = azurerm_network_security_group.main.id
+}
+
+resource "azurerm_network_interface_backend_address_pool_association" "main" {
+  count = length(azurerm_network_interface.main)
+  network_interface_id    = azurerm_network_interface.main[count.index].id
+  ip_configuration_name   = "internal"
+  backend_address_pool_id = azurerm_lb_backend_address_pool.bpepool.id
+}
 
 resource "random_string" "fqdn" {
   length  = 6

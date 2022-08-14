@@ -27,10 +27,13 @@ For this project, you will write a Packer template and a Terraform template to d
 4. Run **_packer build server.json_** to build Linux Image
 5. Change variables.tf as your requirements e.g, change default value of varible **_prefix_**
 6. You can also add or remove variables from variables.tf but remember to change them in main.tf also
-7. Run **_terraform init_** if command is not recognized, try to add terraform exe folder in the Path of Environment variables
-8. Run **_terraform plan -out solution.plan_** to check the plan
-9. Run **_terraform apply_** to deploy your infrastructure
-10. Don't forget to run **_terraform destroy_** if created resources are unnecessary anymore
+7. Change vm_count variable from variables.tf to change the count of VMs
+8. Change **_packer_resource_group_name & packer_image_name_** variables for Packer image
+9. You can also change **_tags_** variable for tag values
+10. Run **_terraform init_** if command is not recognized, try to add terraform exe folder in the Path of Environment variables
+11. Run **_terraform plan -out solution.plan_** to check the plan
+12. Run **_terraform apply_** to deploy your infrastructure
+13. Don't forget to run **_terraform destroy_** if created resources are unnecessary anymore
 
 ### Output
 
