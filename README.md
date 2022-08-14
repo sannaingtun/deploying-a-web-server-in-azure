@@ -40,8 +40,8 @@ The following resources will be created when you run **_terraform apply_**
 2. Resource Group **_project1-resources_**
 3. Virtual Network **_project1-network_**
 4. Subnet **_internal_**
-5. Network Interface **_project1-nic_**
+5. Network Interface **acctni{count.index}\_**
 6. Network Security Group **_nsg-for-project1_**
 7. Public IP
 8. Load Balancer
-9. VMSS with managed disk
+9. 2 VMs with managed disk

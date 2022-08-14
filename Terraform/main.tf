@@ -24,18 +24,19 @@ resource "azurerm_subnet" "internal" {
 }
 
 resource "azurerm_network_interface" "main" {
-  name                = "${var.prefix}-nic"
-  resource_group_name = azurerm_resource_group.main.name
-  location            = azurerm_resource_group.main.location
+   count               = var.vm_count
+   name                = "acctni${count.index}"
+   location            = azurerm_resource_group.main.location
+   resource_group_name = azurerm_resource_group.main.name
 
-  ip_configuration {
-    name                          = "internal"
-    subnet_id                     = azurerm_subnet.internal.id
-    private_ip_address_allocation = "Dynamic"
-  }
+   ip_configuration {
+     name                          = "internal"
+     subnet_id                     = azurerm_subnet.internal.id
+     private_ip_address_allocation = "Dynamic"
+   }
 
   tags = var.tags
-}
+ }
 
 resource "azurerm_network_security_group" "main" {
   name                = "nsg-for-project1"
@@ -95,53 +96,79 @@ resource "azurerm_lb_rule" "lbnatrule" {
   probe_id                       = azurerm_lb_probe.main.id
 }
 
-resource "azurerm_virtual_machine_scale_set" "vmss" {
-  name                = "vmscaleset"
-  location            = var.location
-  resource_group_name = azurerm_resource_group.main.name
-  upgrade_policy_mode = "Manual"
+resource "azurerm_managed_disk" "main" {
+   count                = 2
+   name                 = "datadisk_existing_${count.index}"
+   location             = azurerm_resource_group.main.location
+   resource_group_name  = azurerm_resource_group.main.name
+   storage_account_type = "Standard_LRS"
+   create_option        = "Empty"
+   disk_size_gb         = "1023"
+   tags                         = var.tags
+ }
 
-  sku {
-    name     = "Standard_DS1_v2"
-    tier     = "Standard"
-    capacity = var.capacity
-  }
+ resource "azurerm_availability_set" "avset" {
+   name                         = "avset"
+   location                     = azurerm_resource_group.main.location
+   resource_group_name          = azurerm_resource_group.main.name
+   platform_fault_domain_count  = 2
+   platform_update_domain_count = 2
+   managed                      = true
+   tags                         = var.tags
+ }
 
-  storage_profile_image_reference {
+ resource "azurerm_virtual_machine" "main" {
+   count                 = var.vm_count
+   name                  = "acctvm${count.index}"
+   location              = azurerm_resource_group.main.location
+   availability_set_id   = azurerm_availability_set.avset.id
+   resource_group_name   = azurerm_resource_group.main.name
+   network_interface_ids = [element(azurerm_network_interface.main.*.id, count.index)]
+   vm_size               = "Standard_DS1_v2"
+
+   # Uncomment this line to delete the OS disk automatically when deleting the VM
+   delete_os_disk_on_termination = true
+
+   # Uncomment this line to delete the data disks automatically when deleting the VM
+   delete_data_disks_on_termination = true
+
+   storage_image_reference {
     id = data.azurerm_image.image.id
   }
 
-  storage_profile_os_disk {
-    name              = ""
-    caching           = "ReadWrite"
-    create_option     = "FromImage"
-    managed_disk_type = "Standard_LRS"
-  }
+   storage_os_disk {
+     name              = "myosdisk${count.index}"
+     caching           = "ReadWrite"
+     create_option     = "FromImage"
+     managed_disk_type = "Standard_LRS"
+   }
 
-  storage_profile_data_disk {
-    lun           = 0
-    caching       = "ReadWrite"
-    create_option = "Empty"
-    disk_size_gb  = 10
-  }
+   # Optional data disks
+   storage_data_disk {
+     name              = "datadisk_new_${count.index}"
+     managed_disk_type = "Standard_LRS"
+     create_option     = "Empty"
+     lun               = 0
+     disk_size_gb      = "1023"
+   }
 
-  os_profile {
-    computer_name_prefix = "vmlab"
-    admin_username       = var.admin_user
-    admin_password       = var.admin_password
-  }
+   storage_data_disk {
+     name            = element(azurerm_managed_disk.main.*.name, count.index)
+     managed_disk_id = element(azurerm_managed_disk.main.*.id, count.index)
+     create_option   = "Attach"
+     lun             = 1
+     disk_size_gb    = element(azurerm_managed_disk.main.*.disk_size_gb, count.index)
+   }
 
-  network_profile {
-    name    = "terraformnetworkprofile"
-    primary = true
+   os_profile {
+     computer_name  = "hostname"
+     admin_username = var.admin_user
+     admin_password = var.admin_password
+   }
 
-    ip_configuration {
-      name                                   = "IPConfiguration"
-      subnet_id                              = azurerm_subnet.internal.id
-      load_balancer_backend_address_pool_ids = [azurerm_lb_backend_address_pool.bpepool.id]
-      primary                                = true
-    }
-  }
+   os_profile_linux_config {
+     disable_password_authentication = false
+   }
 
-  tags = var.tags
-}
+   tags = var.tags
+ }

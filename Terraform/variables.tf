@@ -41,7 +41,7 @@ variable "tags" {
   }
 }
 
-variable "capacity" {
-  description = "Number of capacity for VMSS"
+variable "vm_count" {
+  description = "Number of VM"
   default     = 2
 }
