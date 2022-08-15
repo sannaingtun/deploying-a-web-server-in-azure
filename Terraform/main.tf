@@ -52,11 +52,11 @@ resource "azurerm_network_security_rule" "rule_deny_all_inbound" {
   priority                      = 100
   direction                     = "Inbound"
   access                        = "Deny"
-  protocol                      = "Tcp"
+  protocol                      = "*"
   source_port_range             = "*"
   destination_port_range        = "*"
   source_address_prefix         = "Internet"
-  destination_address_prefixes  = ["10.0.2.0/24"]
+  destination_address_prefix    = "VirtualNetwork"
   resource_group_name           = azurerm_resource_group.main.name
   network_security_group_name   = azurerm_network_security_group.main.name
   description                   = "Deny all inbound traffic"
